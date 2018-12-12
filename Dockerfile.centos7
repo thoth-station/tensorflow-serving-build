@@ -125,19 +125,19 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && ls -l /usr/bin/python* \
     && echo "-----IMAGE_TEST--------"
 
-RUN  wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -P /tmp 
-RUN  wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc -P /tmp 
-RUN  cd /tmp && gpg --batch --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 595E85A6B1B4779EA4DAAEC70B588DFF0527A9B7 
-RUN  gpg --batch --verify /tmp/tini.asc /tmp/tini 
-RUN  mv /tmp/tini /usr/local/bin/tini 
-RUN  chmod +x /usr/local/bin/tini 
-RUN  chown -R 1001:1001 /opt/app-root 
-RUN  chgrp -R root /opt/app-root 
-RUN  chmod -R ug+rwx /opt/app-root 
-RUN  echo "startup --batch" >>/etc/.bazelrc 
-RUN  echo "startup --batch" >>/root/.bazelrc 
-RUN  echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/etc/.bazelrc 
-RUN  echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/root/.bazelrc
+RUN  wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -P /tmp \
+    && wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc -P /tmp \
+    && cd /tmp && gpg --batch --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 595E85A6B1B4779EA4DAAEC70B588DFF0527A9B7 \
+    && gpg --batch --verify /tmp/tini.asc /tmp/tini  \
+    && mv /tmp/tini /usr/local/bin/tini  \
+    && chmod +x /usr/local/bin/tini  \
+    && chown -R 1001:1001 /opt/app-root  \ 
+    && chgrp -R root /opt/app-root  \
+    && chmod -R ug+rwx /opt/app-root  \
+    && echo "startup --batch" >>/etc/.bazelrc  \
+    && echo "startup --batch" >>/root/.bazelrc  \
+    && echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/etc/.bazelrc  \
+    && echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/root/.bazelrc 
 
 
 #https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/ci_build/install/.bazelrc
@@ -179,7 +179,7 @@ RUN mkdir -p /tf \
     && chmod g+rwX,o+rX -R /home/$NB_USER
 
 COPY ./s2i/bin/ /usr/libexec/s2i
-ADD test/ /tmp/test/
+# ADD test/ /tmp/test/
 ADD entrypoint /entrypoint
 RUN chmod +x /entrypoint
 ADD build_tools /build_tools
