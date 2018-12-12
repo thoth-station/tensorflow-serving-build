@@ -92,7 +92,7 @@ TENSORFLOW_BUILD_DIR_NAME=$OSVER/${TF_GIT_BRANCH//r}/${FINAL_STR::-1}
 
 
 
-Dev Mode
+#Dev Mode
 if [[ $TEST_LOOP = "y" ]]
 then
 	echo "####################################"
@@ -320,9 +320,8 @@ echo "####################################"
 cd /workspace
 mkdir -p /workspace/bins
 cp /build_tools/*.sh .
-cp /tmp/*.sh .
 ls -l
-source ./print_build_info.sh && echo "OK" || echo "Failed"
+source ./print_build_info.sh && echo "OK" || exit 1
 mv build_info.yaml /workspace/bins/
 
 
