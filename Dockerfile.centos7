@@ -124,13 +124,11 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && echo "PYTHON_VER=$PYTHON_VER" \
     && ls -l /usr/bin/python* \
     && echo "-----IMAGE_TEST--------" \
-    && mkdir -p /home/$NB_USER/.ssh \
-    && echo 'alias ll="ls -l"' >> /home/$NB_USER/.bashrc \
-    && ssh-keyscan pagure.io >> /home/$NB_USER/.ssh/known_hosts \
     && wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -P /tmp \
     && wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc -P /tmp \
     && cd /tmp \
-    && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 0527A9B7 && gpg --verify /tmp/tini.asc \
+    && gpg --batch --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 595E85A6B1B4779EA4DAAEC70B588DFF0527A9B7 \
+    && gpg --batch --verify /tmp/tini.asc /tmp/tini \
     && mv /tmp/tini /usr/local/bin/tini \
     && chmod +x /usr/local/bin/tini \
     && chown -R 1001:1001 /opt/app-root \

@@ -108,7 +108,7 @@
         {
             "name": "SOURCE_REPOSITORY",
             "description": "Git repository for source.",
-            "value": "https://github.com/thoth-station/tensorflow-serving-build-s2i.git",
+            "value": "https://github.com/thoth-station/tensorflow-serving-build.git",
             "required": true
         },
         {

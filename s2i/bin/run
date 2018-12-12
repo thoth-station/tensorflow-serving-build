@@ -309,7 +309,7 @@ for varname in ${!TF_NEED_*}; do
         unset "${varname}"
     fi
 done
-TENSORFLOW_BUILD_DIR_NAME=$OSVER/${TF_GIT_BRANCH//r}/${FINAL_STR::-1}
+TENSORFLOW_BUILD_DIR_NAME=$OSVER/${TF_GIT_BRANCH//r}
 
 
 
@@ -337,13 +337,13 @@ else
 	echo "####################################"
 	echo "      CUSTOM_BUILD  SUCCESS     	  "
 	echo "####################################"
-	if [ -e bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ]
+	if [ -e /workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ]
 	then
 		## bazel build is success 
 		## cleanup old
+		echo "File exists"
 		rm -fr /workspace/bins/tensorflow*
-		cp bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server /workspace/bins ;
-
+		cp  /workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server /workspace/bins
 		ls -l /workspace/bins
 		#release
 		echo "####################################"
@@ -357,11 +357,12 @@ else
 		cp /build_tools/*.py .
 		cp /workspace/bins/build_info.* /tmp/release_dir/
 		cp /workspace/bins/* /tmp/release_dir/
+		ls -l /tmp/release_dir/
 		whlff=$(basename `ls tensorflow*`)
 		OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)
 		#OSVER=$(cat build_info.yaml | grep -e "OS_VER" | awk '{print $2,$4}' |tr -d " ")
 		RELEASE_NAME=$OSVER/$NB_PYTHON_VER/$TF_GIT_BRANCH
-		if [ $TF_NEED_CUDA = "1" ]; then
+		if [ $TF_NEED_CUDA == "1" ]; then
 			GIT_TAG="tf-serving-${TF_GIT_BRANCH}-gpu-$(date +%Y-%m-%d_%H%M%S)"
 		else
 			GIT_TAG="tf-serving-${TF_GIT_BRANCH}-cpu-$(date +%Y-%m-%d_%H%M%S)"
