@@ -4,10 +4,10 @@
 
 This S2I respository has [template](https://docs.openshift.org/latest/dev_guide/templates.html) files used for building tensorflow wheel files for:
 * `Centos7`
+* `Fedora28`
 
 TODO:
 * `Fedora27`
-* `Fedora28`
 * `RHEL7.5`
 NOTE: for `RHEL7.5` you need a system with RHEL Subscription enabled.
 
@@ -43,3 +43,20 @@ oc new-app --template=tensorflow-serving-build-job  \
 --param=NB_PYTHON_VER=$PYTH_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
 --param=BAZEL_VERSION=0.15.0
 ```
+
+
+```
+oc new-app --template=tensorflow-serving-build-image  \
+--param=APPLICATION_NAME=tf-serving-fedora28-build-image-${PYTH_VERSION//.} \
+--param=S2I_IMAGE=registry.fedoraproject.org/f28/s2i-core   \
+--param=DOCKER_FILE_PATH=Dockerfile.fedora28 --param=NB_PYTHON_VER=$PYTH_VERSION --param=VERSION=1
+```
+
+```
+oc new-app --template=tensorflow-serving-build-job  \
+--param=APPLICATION_NAME=tf-serving-fedora28-build-job-${PYTH_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-fedora28-build-image-${PYTH_VERSION//.}:1  \
+--param=NB_PYTHON_VER=$PYTH_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
+--param=BAZEL_VERSION=0.15.0
+```
+

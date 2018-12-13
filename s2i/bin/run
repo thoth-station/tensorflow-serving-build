@@ -368,7 +368,7 @@ else
 		fi
 		NOTES=$(python /tmp/release_dir/utils.py /tmp/release_dir/build_info.yaml)
 		GIT_TOKEN="${GIT_TOKEN}"
-		FILES="../${whlff} ../build_info.json  ../build_info.yaml"
+		FILES="../${whlff} ../build_info.yaml ../build_info.json"
 		ls -l
 		git clone $GIT_RELEASE_REPO
 		cd tensorflow-wheels
