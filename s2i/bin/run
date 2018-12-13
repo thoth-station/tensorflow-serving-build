@@ -322,7 +322,7 @@ mkdir -p /workspace/bins
 cp /build_tools/*.sh .
 ls -l
 source ./print_build_info.sh && echo "OK" || exit 1
-mv build_info.yaml /workspace/bins/
+mv build_info.* /workspace/bins/
 
 
 # TODO refator this out to script
@@ -361,7 +361,7 @@ else
 		OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)
 		#OSVER=$(cat build_info.yaml | grep -e "OS_VER" | awk '{print $2,$4}' |tr -d " ")
 		RELEASE_NAME=$OSVER/$NB_PYTHON_VER/$TF_GIT_BRANCH
-		if [ $TF_NEED_CUDA == "1" ]; then
+		if [ $TF_NEED_CUDA = "1" ]; then
 			GIT_TAG="tf-serving-${TF_GIT_BRANCH}-gpu-$(date +%Y-%m-%d_%H%M%S)"
 		else
 			GIT_TAG="tf-serving-${TF_GIT_BRANCH}-cpu-$(date +%Y-%m-%d_%H%M%S)"
