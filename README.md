@@ -30,7 +30,7 @@ GIT_TOKEN=
 
 ```
 oc new-app --template=tensorflow-serving-build-image  \
---param=APPLICATION_NAME=tf-serving-centos7-build-image-${PYTH_VERSION//.} \
+--param=APPLICATION_NAME=tf-serving-build-image-centos7-${PYTH_VERSION//.} \
 --param=S2I_IMAGE=openshift/base-centos7   \
 --param=DOCKER_FILE_PATH=Dockerfile.centos7 \
 --param=NB_PYTHON_VER=$PYTH_VERSION --param=VERSION=1
@@ -38,25 +38,25 @@ oc new-app --template=tensorflow-serving-build-image  \
 
 ```
 oc new-app --template=tensorflow-serving-build-job  \
---param=APPLICATION_NAME=tf-serving-centos7-build-job-${PYTH_VERSION//.} \
---param=BUILDER_IMAGESTREAM=tf-serving-centos7-build-image-${PYTH_VERSION//.}:1  \
+--param=APPLICATION_NAME=tf-serving-build-job-centos7-${PYTH_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-build-image-centos7-${PYTH_VERSION//.}:1  \
 --param=NB_PYTHON_VER=$PYTH_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
---param=BAZEL_VERSION=0.15.0
+--param=BAZEL_VERSION=0.15.0 --param=TF_GIT_BRANCH=r1.10
 ```
 
 
 ```
 oc new-app --template=tensorflow-serving-build-image  \
---param=APPLICATION_NAME=tf-serving-fedora28-build-image-${PYTH_VERSION//.} \
+--param=APPLICATION_NAME=tf-serving-build-image-fedora28-${PYTH_VERSION//.} \
 --param=S2I_IMAGE=registry.fedoraproject.org/f28/s2i-core   \
 --param=DOCKER_FILE_PATH=Dockerfile.fedora28 --param=NB_PYTHON_VER=$PYTH_VERSION --param=VERSION=1
 ```
 
 ```
 oc new-app --template=tensorflow-serving-build-job  \
---param=APPLICATION_NAME=tf-serving-fedora28-build-job-${PYTH_VERSION//.} \
---param=BUILDER_IMAGESTREAM=tf-serving-fedora28-build-image-${PYTH_VERSION//.}:1  \
+--param=APPLICATION_NAME=tf-serving-build-job-fedora28-${PYTH_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-build-image-fedora28-${PYTH_VERSION//.}:1  \
 --param=NB_PYTHON_VER=$PYTH_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
---param=BAZEL_VERSION=0.15.0
+--param=BAZEL_VERSION=0.15.0 --param=TF_GIT_BRANCH=r1.10
 ```
 
