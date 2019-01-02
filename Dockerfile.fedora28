@@ -15,9 +15,9 @@ LABEL io.k8s.description="S2I builder for Tensorflow binaries." \
 
 # DONOT uncomment. uncomment for dev.
 ARG BAZEL_VERSION=0.15.0
-ARG NB_PYTHON_VER=3.6
+ARG PYTHON_VERSION=3.6
 ENV BAZEL_VERSION=$BAZEL_VERSION
-ENV NB_PYTHON_VER=$NB_PYTHON_VER
+ENV PYTHON_VERSION=$PYTHON_VERSION
 
 # Not essential, but wise to set the lang
 # Note: Users with other languages should set this in their derivative image
@@ -27,19 +27,18 @@ ENV LC_ALL=""
 ENV PYTHONIOENCODING UTF-8
 ENV NB_USER=default
 ENV NB_UID=1001
-#### ENV NB_PYTHON_VER=DONOT UNCOMMENT
 ENV PYTHON_BIN_PATH=/usr/bin/python
 ENV TINI_VERSION=v0.18.0
 
 ## Bazel
-ENV PYTHON_LIB_PATH=/usr/lib64/python$NB_PYTHON_VER/site-packages
+ENV PYTHON_LIB_PATH=/usr/lib64/python$PYTHON_VERSION/site-packages
 ENV LD_LIBRARY_PATH="/usr/local/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}";
 ENV BAZELRC /root/.bazelrc
 #### ENV BAZEL_VERSION = DONOT UNCOMMENT
 ################################################
 ## Tensorflow ./configure options for Bazel
 ################################################
-ENV PYTHON_BIN_PATH=/usr/bin/python$NB_PYTHON_VER
+ENV PYTHON_BIN_PATH=/usr/bin/python$PYTHON_VERSION
 ENV CC_OPT_FLAGS -march=native
 ENV TF_NEED_JEMALLOC 1
 ENV TF_NEED_GCP 0
@@ -60,15 +59,15 @@ ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-1.8.0*
 
 
 RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
-    && if [ "$NB_PYTHON_VER" = "2.7" ] ; then yum install -y python27 python-devel && rm -fr /usr/bin/python && ln -s /usr/bin/python2.7 /usr/bin/python ; fi \
-    && if [ "$NB_PYTHON_VER" = "3.5" ] ; then yum install -y python35 python3-devel && rm -fr /usr/bin/python && ln -s /usr/bin/python3.5 /usr/bin/python; fi \
-    && if [ "$NB_PYTHON_VER" = "3.6" ] ; then yum install -y python36 python3-devel && rm -fr /usr/bin/python && ln -s /usr/bin/python3.6 /usr/bin/python; fi \
+    && if [ "$PYTHON_VERSION" = "2.7" ] ; then yum install -y python27 python-devel && rm -fr /usr/bin/python && ln -s /usr/bin/python2.7 /usr/bin/python ; fi \
+    && if [ "$PYTHON_VERSION" = "3.5" ] ; then yum install -y python35 python3-devel && rm -fr /usr/bin/python && ln -s /usr/bin/python3.5 /usr/bin/python; fi \
+    && if [ "$PYTHON_VERSION" = "3.6" ] ; then yum install -y python36 python3-devel && rm -fr /usr/bin/python && ln -s /usr/bin/python3.6 /usr/bin/python; fi \
     && dnf install -y tar tree which git curl wget java-headless bzip2 gnupg2 sqlite protobuf-compiler kmod \
     && chgrp -R root /opt \
     && chmod -R a+rwx /opt \
     && chmod a+rw /etc/passwd \
     && curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
-    && python$NB_PYTHON_VER get-pip.py \
+    && python$PYTHON_VERSION get-pip.py \
     && dnf install -y gcc gcc-c++ glibc-devel openssl-devel gpg \
     && dnf install -y which findutils x86info cpuid dmidecode procps \
     && dnf install -y kernel-devel make automake autoconf swig zip unzip libtool binutils elfutils-libelf-devel \
@@ -111,7 +110,7 @@ RUN  wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini
 RUN mkdir -p /tf \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -U setuptools \
-    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyyaml \
+    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyyaml keras \
     && mkdir -p /tf/tools \
     && cd /tf/tools \
     && wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh \
