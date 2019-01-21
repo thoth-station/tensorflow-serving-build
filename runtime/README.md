@@ -1,9 +1,17 @@
+# Kubeflow compatible Tensorflow Serving Images
+
 
 ### Build Tensorflow Serving Images
 ```
 docker build -f Dockerfile.centos7  -t submod/tf_serving_centos7_1.9 .
 docker build -f Dockerfile.centos7  -t submod/tf_serving_f28_1.10 .
+docker push submod/tf_serving_centos7_1.9
+docker push submod/tf_serving_f28_1.10 
 
+docker build -f Dockerfile.centos7  -t quay.io/sub_mod/aicoe/tf_serving_centos7_1.9 .
+docker build -f Dockerfile.fedora28  -t quay.io/aicoe/tf_serving_f28_1.10 .
+docker push quay.io/aicoe/aicoe/tf_serving_centos7_1.9
+docker push quay.io/aicoe/tf_serving_f28_1.10 
 ```
 Images are located here 
 https://hub.docker.com/_/fedora/ 
@@ -71,6 +79,13 @@ spec:
 
 ```
 
+### FAQs
+
+Q:I see below error between client and serving endpoint.What is the issue?
+```
+Check whether your GraphDef-interpreting binary is up to date with your GraphDef-generating binary
+```
+A: This is due to difference in the tensorflow binary used in training and the serving binary used for serving.
 
 
 ### Test Tensorflow Serving Images you built.
