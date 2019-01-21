@@ -1,4 +1,4 @@
-FROM centos:7
+FROM fedora:28
 
 ARG TF_SERVING_VERSION_GIT_BRANCH=master
 ARG TF_SERVING_VERSION_GIT_COMMIT=head
@@ -8,14 +8,14 @@ LABEL tensorflow_serving_github_branchtag=${TF_SERVING_VERSION_GIT_BRANCH}
 LABEL tensorflow_serving_github_commit=${TF_SERVING_VERSION_GIT_COMMIT}
 
 # provide different URL here for different versions
-ARG TF_URL=https://github.com/AICoE/tensorflow-wheels/releases/download/tf-serving-r1.9-cpu-2018-12-13_145924/tensorflow_model_server
+ARG TF_URL=https://github.com/AICoE/tensorflow-wheels/releases/download/tf-serving-r1.10-cpu-2018-12-13_154216/tensorflow_model_server
 
 
 # Install TF Serving pkg
-RUN yum install -y gcc gcc-c++ glibc-devel openssl-devel \
-    && yum install -y wget tree which findutils x86info cpuid dmidecode procps \
-    && yum install -y kernel-devel make automake autoconf swig zip unzip libtool binutils \
-    && yum clean all -y \
+RUN dnf install -y gcc gcc-c++ glibc-devel openssl-devel \
+    && dnf install -y wget tree which findutils x86info cpuid dmidecode procps \
+    && dnf install -y kernel-devel make automake autoconf swig zip unzip libtool binutils \
+    && dnf clean all -y \
     && mkdir -p /usr/local/bin \
     && wget -q ${TF_URL} -P /usr/bin \
     && chmod 744 /usr/bin/tensorflow_model_server
