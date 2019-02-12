@@ -52,6 +52,9 @@ env_check TF_NEED_OPENCL_SYCL
 env_check TF_DOWNLOAD_CLANG
 env_check TF_SET_ANDROID_WORKSPACE
 
+### 1.12 tensorflow needs below new ENVs
+env_check TF_NEED_IGNITE
+env_check TF_NEED_ROCM
 ### These ENVs should be correctly set by Dockerfile.
 env_check PATH MY_EXIT_1
 env_check JAVA_HOME MY_EXIT_1
@@ -74,6 +77,8 @@ env_check HOME
 
 echo "============================================"
 
+BUILD_TOOLS_DIR="/build_tools"
+env_check BUILD_TOOLS_DIR
 #TODO
 #pip list 2>&1 | grep "YAML\|proto\|numpy"
 #echo "PYTHON_LIB_PATH=`$PYTHON_BIN_PATH -c 'import site; print(site.getsitepackages()[0])'`"
@@ -121,7 +126,7 @@ fi
 
 
 
-sh /build_tools/python_script.sh
+sh $BUILD_TOOLS_DIR/python_script.sh
 echo "The Python conundrum.DONE."
 
 
@@ -208,16 +213,17 @@ cd /workspace
 mkdir -p /workspace/bins
 rm -fr /workspace/bins/tensorflow*
 
-source /build_tools/print_build_info.sh || $MY_EXIT_1
+source $BUILD_TOOLS_DIR/print_build_info.sh || $MY_EXIT_1
 mv build_info.* /workspace/bins/
 
 
 # bazel build -c opt --local_resources 2048,2.0,1.0  //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures
 # bazel build -c opt --local_resources 2048,2.0,1.0  tensorflow_serving/tools/pip_package:build_pip_package --verbose_failures
 # && bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package /tmp
+env_check CUSTOM_BUILD
 eval "$CUSTOM_BUILD" 2>&1 | tee -a /workspace/build.log ; test ${PIPESTATUS[0]} -eq 0
 if (( $? )); then
-    echo "####################################"
+	echo "####################################"
 	echo "      CUSTOM_BUILD  ERROR!!     	  "
 	echo "####################################"
 	$MY_EXIT_1
@@ -233,7 +239,8 @@ else
 		## bazel build is success 
 		## cleanup old
 		echo "File tensorflow_model_server exists."
-
+		cd /workspace
+		env_check CUSTOM_BUILD_2
 		eval "$CUSTOM_BUILD_2" 2>&1 | tee -a /workspace/build.log ; test ${PIPESTATUS[0]} -eq 0
 		if (( $? )); then
 		    echo "####################################"
@@ -248,44 +255,39 @@ else
 			then
 				echo "File build_pip_package exists."
 				PIP_RELEASE_FOLDER="/tmp/build_pip_package-$(date +%Y-%m-%d_%H%M%S)"
+				env_check PIP_RELEASE_FOLDER
 				mkdir -p $PIP_RELEASE_FOLDER
 				bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package $PIP_RELEASE_FOLDER
+				#release
+				echo "####################################"
+				echo "      Releasing...			      "
+				echo "####################################"
 				cd $PIP_RELEASE_FOLDER
-				source /build_tools/change_metadata.sh "$PIP_RELEASE_FOLDER/tensorflow_serving_api*" 
-
-		cp $FINAL_FILE /workspace/bins
-		ls -l /workspace/bins
-		#release
-		echo "####################################"
-		echo "      Releasing...			      "
-		echo "####################################"
-		rm -fr /tmp/release_dir
-		mkdir -p /tmp/release_dir
-		cd /tmp/release_dir/
-		pwd
-		cp /build_tools/*.sh .
-		cp /build_tools/*.py .
-		cp /workspace/bins/build_info.* /tmp/release_dir/
-		cp /workspace/bins/* /tmp/release_dir/
-		ls -l /tmp/release_dir/
-
-
-		BINARY_FILE=$(basename `ls tensorflow*`)
-		[[ $BINARY_FILE =~ .*_serving_api* ]] && TF_FILE_NAME="tensorflow_serving_api" || TF_FILE_NAME="tf-serving"
-		OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)
-		RELEASE_NAME=$OSVER/$PYTHON_VERSION/$TF_GIT_BRANCH
-		if [ $TF_NEED_CUDA = "1" ]; then
-			GIT_TAG="$TF_FILE_NAME-${TF_GIT_BRANCH}-gpu-$(date +%Y-%m-%d_%H%M%S)"
-		else
-			GIT_TAG="$TF_FILE_NAME-${TF_GIT_BRANCH}-cpu-$(date +%Y-%m-%d_%H%M%S)"
+				source $BUILD_TOOLS_DIR/change_metadata.sh "$PIP_RELEASE_FOLDER/tensorflow_serving_api*"  /workspace/bins/
+				cd $PIP_RELEASE_FOLDER
+				BINARY_FILE=$(basename `ls tensorflow*.whl`)
+				env_check BINARY_FILE
+				[[ $BINARY_FILE =~ .*_serving_api* ]] && TF_FILE_NAME="tensorflow_serving_api" || TF_FILE_NAME="tf-serving"
+				OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)
+				RELEASE_NAME=$OSVER/$PYTHON_VERSION/$TF_GIT_BRANCH
+				if [ $TF_NEED_CUDA = "1" ]; then
+					GIT_TAG="$TF_FILE_NAME-${TF_GIT_BRANCH}-gpu-$(date +%Y-%m-%d_%H%M%S)"
+				else
+					GIT_TAG="$TF_FILE_NAME-${TF_GIT_BRANCH}-cpu-$(date +%Y-%m-%d_%H%M%S)"
+				fi
+				RELEASE_NOTES=$(python $BUILD_TOOLS_DIR/utils.py /workspace/bins/build_info.json) 
+				GIT_TOKEN="${GIT_TOKEN}"
+				RELEASE_FILES="$PIP_RELEASE_FOLDER/${BINARY_FILE} /workspace/bins/build_info.yaml /workspace/bins/build_info.json"
+				env_check RELEASE_FILES
+			fi
 		fi
-		RELEASE_NOTES=$(python /tmp/release_dir/utils.py /tmp/release_dir/build_info.yaml)
-		GIT_TOKEN="${GIT_TOKEN}"
-		RELEASE_FILES="../${BINARY_FILE} ../build_info.yaml ../build_info.json"
+		#release the tensorflow_model_server
+		RELEASE_FILES="/workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server${RELEASE_FILES:+ ${RELEASE_FILES}}"
+		env_check RELEASE_FILES
 		git clone $GIT_RELEASE_REPO
 		ls -l
 		cd tensorflow-wheels
-		source ../release.sh "${GIT_TAG}" "${TENSORFLOW_BUILD_DIR_NAME}" "${RELEASE_NOTES}" "${GIT_TOKEN}" "${RELEASE_FILES}"
+		source $BUILD_TOOLS_DIR/release.sh "${GIT_TAG}" "${TENSORFLOW_BUILD_DIR_NAME}" "${RELEASE_NOTES}" "${GIT_TOKEN}" "${RELEASE_FILES}"
 	fi #end
 fi # end build
 if ls -l  /workspace/build.log; then

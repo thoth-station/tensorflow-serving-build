@@ -19,44 +19,113 @@ And the instructions to use with pipfile are given here [AICoE's TensorFlow Arti
 GPU is not yet supported.
 
 
+## Bazel build options
+* `TF_NEED_JEMALLOC`: = 1
+* `TF_NEED_GCP`: = 0
+* `TF_NEED_VERBS`: = 0
+* `TF_NEED_HDFS`: = 0
+* `TF_ENABLE_XLA`: = 0
+* `TF_NEED_OPENCL`: = 0
+* `TF_NEED_CUDA`: = 1
+* `TF_NEED_MPI`: = 0
+* `TF_NEED_GDR`: = 0
+* `TF_NEED_S3`: = 0
+* `TF_CUDA_VERSION`: = 9.0
+* `TF_CUDA_COMPUTE_CAPABILITIES`: = 3.0,3.5,5.2,6.0,6.1,7.0
+* `TF_CUDNN_VERSION`: = 7
+* `TF_NEED_OPENCL_SYCL`:= 0
+* `TF_NEED_TENSORRT`:= 0
+* `TF_CUDA_CLANG`:= 0
+* `GCC_HOST_COMPILER_PATH`:= /usr/bin/gcc
+* `CUDA_TOOLKIT_PATH`:= /usr/lib/cuda
+* `CUDNN_INSTALL_PATH`:= /usr/lib/cuda
+* `TF_NEED_KAFKA`:=0
+* `TF_NEED_OPENCL_SYCL`:=0
+* `TF_DOWNLOAD_CLANG`:=0
+* `TF_SET_ANDROID_WORKSPACE`:=0
+* `TF_NEED_IGNITE`: = 0
+* `TF_NEED_ROCM`: = 0
+
+Here is the default build command used to build tensorflow. 
+* `CUSTOM_BUILD`:=`bazel build  -c opt --local_resources 2048,2.0,1.0 --verbose_failures //tensorflow_serving/model_servers:tensorflow_model_server`
+* `CUSTOM_BUILD_2`:=`bazel build  -c opt --local_resources 2048,2.0,1.0 --verbose_failures tensorflow_serving/tools/pip_package:build_pip_package`
+
+Following should be left blank for a build job.
+* `TEST_LOOP`:=
+* `BUILD_OPTS`:=
+
 
 
 ## Usage
 
+### To create a wheel file
+
+*set some environment values for convenience*
 ```
-PYTH_VERSION=3.6
-GIT_TOKEN=4549d22310051ec555b12427bfdc5cde5ccaa945
+# valid values are 2.7,3.6,3.5
+PYTHON_VERSION=3.6
+
+# git token and repo
+export GIT_TOKEN=
+export GIT_RELEASE_REPO=
 ```
 
+
+#### 1. Create the templates
+```
+oc create -f tensorflow-build-image.json
+oc create -f tensorflow-build-job.json
+oc create -f tensorflow-build-dc.json
+```
+
+#### 2. Create Tensorflow-Serving build image
 ```
 oc new-app --template=tensorflow-serving-build-image  \
---param=APPLICATION_NAME=tf-serving-build-image-centos7-${PYTH_VERSION//.} \
---param=S2I_IMAGE=openshift/base-centos7   \
---param=DOCKER_FILE_PATH=Dockerfile.centos7 \
---param=PYTHON_VERSION=$PYTH_VERSION --param=BUILD_VERSION=1
-```
+ --param=APPLICATION_NAME=tf-serving-fc28-build-image-${PYTHON_VERSION//.} \
+ --param=S2I_IMAGE=registry.fedoraproject.org/f28/s2i-core   \
+ --param=DOCKER_FILE_PATH=Dockerfile.fedora28 \
+ --param=PYTHON_VERSION=$PYTHON_VERSION --param=BUILD_VERSION=1 --param=BAZEL_VERSION=0.18.0
 
+ oc new-app --template=tensorflow-serving-build-image  \
+ --param=APPLICATION_NAME=tf-serving-centos7-build-image-${PYTHON_VERSION//.} \
+ --param=S2I_IMAGE=openshift/base-centos7   \
+ --param=DOCKER_FILE_PATH=Dockerfile.centos7 \
+ --param=PYTHON_VERSION=$PYTHON_VERSION --param=BUILD_VERSION=1 --param=BAZEL_VERSION=0.18.0
+```
+The above command creates a tensorflow builder image `APPLICATION_NAME:VERSION` for specific OS.
+
+The values for `S2I_IMAGE` are :
+- Fedora28- `registry.fedoraproject.org/f28/s2i-core`
+- Centos7- `openshift/base-centos7`
+
+The values for `DOCKER_FILE_PATH` are :
+- Fedora28- `Dockerfile.fedora28`
+- Centos7- `Dockerfile.centos7`
+
+
+#### 3. Create Tensorflow wheel for CPU using the build image
 ```
 oc new-app --template=tensorflow-serving-build-job  \
---param=APPLICATION_NAME=tf-serving-build-job-centos7-${PYTH_VERSION//.} \
---param=BUILDER_IMAGESTREAM=tf-serving-build-image-centos7-${PYTH_VERSION//.}:1  \
---param=PYTHON_VERSION=$PYTH_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
---param=BAZEL_VERSION=0.15.0 --param=TF_GIT_BRANCH=r1.10
+--param=APPLICATION_NAME=tf-serving-fc28-build-job-${PYTHON_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-fc28-build-image-${PYTHON_VERSION//.}:1  \
+--param=PYTHON_VERSION=$PYTHON_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
+--param=BAZEL_VERSION=0.18.0 --param=TF_GIT_BRANCH=r1.12
 ```
 
+*OR*
 
-```
-oc new-app --template=tensorflow-serving-build-image  \
---param=APPLICATION_NAME=tf-serving-build-image-fedora28-${PYTH_VERSION//.} \
---param=S2I_IMAGE=registry.fedoraproject.org/f28/s2i-core   \
---param=DOCKER_FILE_PATH=Dockerfile.fedora28 --param=PYTHON_VERSION=$PYTH_VERSION --param=BUILD_VERSION=1
-```
+Import the template `tensorflow-build-job.json` into your namespace from Openshift UI.
+And then deploy from UI with appropriate values.
+Tensorflow wheel files will be pushed to `$GIT_RELEASE_REPO` using the token `$GIT_TOKEN`.
+(NOTE: This will ONLY work if the oauth token has scope of "repo".
+You can generate Personal API access token at https://github.com/settings/tokens. Minimal token scope is "repo".)
 
+### To create a DEV environment for debugging build issues :
 ```
-oc new-app --template=tensorflow-serving-build-job  \
---param=APPLICATION_NAME=tf-serving-build-job-fedora28-${PYTH_VERSION//.} \
---param=BUILDER_IMAGESTREAM=tf-serving-build-image-fedora28-${PYTH_VERSION//.}:1  \
---param=PYTHON_VERSION=$PYTH_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
---param=BAZEL_VERSION=0.15.0 --param=TF_GIT_BRANCH=r1.10
+oc new-app --template=tensorflow-serving-build-dc  \
+--param=APPLICATION_NAME=tf-serving-build-dc-fc28-${PYTHON_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-fc28-build-image-${PYTHON_VERSION//.}:1  \
+--param=PYTHON_VERSION=$PYTHON_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
+--param=BAZEL_VERSION=0.18.0 --param=TF_GIT_BRANCH=r1.12
 ```
-
+NOTE: `BUILDER_IMAGESTREAM = APPLICATION_NAME:BUILD_VERSION` from step 2. 

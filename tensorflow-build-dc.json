@@ -66,6 +66,10 @@
                                         "value": "${CUSTOM_BUILD}"
                                     },
                                     {
+                                        "name": "CUSTOM_BUILD_2",
+                                        "value": "${CUSTOM_BUILD_2}"
+                                    },
+                                    {
                                         "name": "BUILD_OPTS",
                                         "value": "${BUILD_OPTS}"
                                     },
@@ -297,7 +301,13 @@
         {
             "name": "CUSTOM_BUILD",
             "description": "Set to custom BUILD command",
-            "value": "bazel build --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-mfpmath=both --copt=-msse4.2  --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0' --local_resources 2048,2.0,1.0 --verbose_failures //tensorflow-serving/tools/pip_package:build_pip_package",
+            "value": "bazel build --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-mfpmath=both --copt=-msse4.2  --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0' --local_resources 2048,2.0,1.0 --verbose_failures //tensorflow_serving/model_servers:tensorflow_model_server",
+            "required": false
+        },
+        {
+            "name": "CUSTOM_BUILD_2",
+            "description": "Set to custom BUILD command",
+            "value": "bazel build --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-mfpmath=both --copt=-msse4.2  --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0' --local_resources 2048,2.0,1.0 --verbose_failures //tensorflow_serving/tools/pip_package:build_pip_package",
             "required": false
         },
         {
@@ -507,7 +517,7 @@
         {
             "name": "GIT_RELEASE_REPO",
             "description": "GIT_RELEASE_REPO",
-            "value": "https://github.com/AICoE/tensorflow-serving-wheels.git",
+            "value": "https://github.com/AICoE/tensorflow-wheels.git",
             "required": true
         }
     ]

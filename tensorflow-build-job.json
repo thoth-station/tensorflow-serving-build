@@ -37,6 +37,10 @@
                                         "value": "${CUSTOM_BUILD}"
                                     },
                                     {
+                                        "name": "CUSTOM_BUILD_2",
+                                        "value": "${CUSTOM_BUILD_2}"
+                                    },
+                                    {
                                         "name": "BUILD_OPTS",
                                         "value": "${BUILD_OPTS}"
                                     },
@@ -69,8 +73,20 @@
                                         "value": "${TF_NEED_CUDA}"
                                     },
                                     {
+                                        "name": "TF_NEED_IGNITE",
+                                        "value": "${TF_NEED_IGNITE}"
+                                    },
+                                    {
+                                        "name": "TF_NEED_ROCM",
+                                        "value": "${TF_NEED_ROCM}"
+                                    },
+                                    {
                                         "name": "NCCL_INSTALL_PATH",
                                         "value": "${NCCL_INSTALL_PATH}"
+                                    },
+                                    {
+                                        "name": "TEST_LOOP",
+                                        "value": "${TEST_LOOP}"
                                     },
                                     {
                                         "name": "PYTHON_VERSION",
@@ -83,6 +99,14 @@
                                     {
                                         "name": "TF_GIT_BRANCH",
                                         "value": "${TF_GIT_BRANCH}"
+                                    },
+                                    {
+                                        "name": "HOST_ON_HTTP_SERVER",
+                                        "value": "${HOST_ON_HTTP_SERVER}"
+                                    },
+                                    {
+                                        "name": "TEST_WHEEL_FILE",
+                                        "value": "${TEST_WHEEL_FILE}"
                                     },
                                     {
                                         "name": "GIT_RELEASE_REPO",
@@ -137,7 +161,7 @@
         {
             "name": "CUSTOM_BUILD_2",
             "description": "Set to custom BUILD 2 command",
-            "value": "bazel build -c opt --local_resources 2048,2.0,1.0  //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures",
+            "value": "bazel build  -c opt --local_resources 2048,2.0,1.0 --verbose_failures tensorflow_serving/tools/pip_package:build_pip_package",
             "required": false
         },
         {
@@ -201,6 +225,12 @@
             "required": true
         },
         {
+            "name": "TEST_LOOP",
+            "description": "USE ONLY with DeploymentConfig.(y or n).If y then start a while loop.If y then http won't start.",
+            "value": "n",
+            "required": true
+        },
+        {
             "name": "BAZEL_VERSION",
             "description": "BAZEL_VERSION",
             "value": "0.15.0",
@@ -210,6 +240,36 @@
             "name": "TF_GIT_BRANCH",
             "description": "TF_GIT_BRANCH",
             "value": "r1.9",
+            "required": true
+        },
+        {
+            "name": "TF_NEED_IGNITE",
+            "description": "TF_NEED_IGNITE",
+            "value": "n",
+            "required": true
+        },
+        {
+            "name": "TF_NEED_ROCM",
+            "description": "TF_NEED_ROCM",
+            "value": "n",
+            "required": true
+        },
+        {
+            "name": "HOST_ON_HTTP_SERVER",
+            "description": "USE ONLY with DeploymentConfig.(y or n)If y then http server.",
+            "value": "n",
+            "required": true
+        },
+        {
+            "name": "PORT",
+            "description": "USE ONLY with DeploymentConfig.http server port.",
+            "value": "8080",
+            "required": true
+        },
+        {
+            "name": "TEST_WHEEL_FILE",
+            "description": "(y or n)To run a simple test code to test wheel file.",
+            "value": "y",
             "required": true
         },
         {
