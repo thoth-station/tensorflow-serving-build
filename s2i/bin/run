@@ -63,6 +63,7 @@ env_check PYTHON_BIN_PATH MY_EXIT_1
 env_check PORT
 env_check BUILD_OPTS
 env_check CUSTOM_BUILD MY_EXIT_1
+env_check CUSTOM_BUILD_2 MY_EXIT_1
 env_check TEST_LOOP MY_EXIT_1
 env_check TF_GIT_BRANCH MY_EXIT_1
 env_check PYTHON_VERSION MY_EXIT_1
@@ -71,7 +72,6 @@ env_check TEST_WHEEL_FILE MY_EXIT_1
 env_check GIT_RELEASE_REPO MY_EXIT_1
 env_check HOME
 
-[[ $CUSTOM_BUILD =~ .*FINAL_FILE* ]] && echo "FINAL_FILE found." || echo "FINAL_FILE env value needed in CUSTOM_BUILD" && $MY_EXIT_1
 echo "============================================"
 
 #TODO
@@ -206,13 +206,15 @@ echo "      CUSTOM_BUILD.....       	  "
 echo "####################################"
 cd /workspace
 mkdir -p /workspace/bins
-#TODO why copy ?
-cp /build_tools/*.sh .
-ls -l
-source ./print_build_info.sh || $MY_EXIT_1
+rm -fr /workspace/bins/tensorflow*
+
+source /build_tools/print_build_info.sh || $MY_EXIT_1
 mv build_info.* /workspace/bins/
 
 
+# bazel build -c opt --local_resources 2048,2.0,1.0  //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures
+# bazel build -c opt --local_resources 2048,2.0,1.0  tensorflow_serving/tools/pip_package:build_pip_package --verbose_failures
+# && bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package /tmp
 eval "$CUSTOM_BUILD" 2>&1 | tee -a /workspace/build.log ; test ${PIPESTATUS[0]} -eq 0
 if (( $? )); then
     echo "####################################"
@@ -223,16 +225,34 @@ else
 	echo "####################################"
 	echo "      CUSTOM_BUILD  SUCCESS     	  "
 	echo "####################################"
-	env_check FINAL_FILE
 	# 1) FINAL_FILE = /workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server
 	# 2) CUSTOM_BUILD=/workspace/tensorflow_serving/tools/pip_package:build_pip_package && bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package /tmp \
 	# && FINAL_FILE=$(basename `ls /tmp/tensorflow_serving_api*`)
-	if [ -e "${FINAL_FILE}" ]
+	if [ -e /workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ]
 	then
 		## bazel build is success 
 		## cleanup old
-		echo "File $FINAL_FILE exists."
-		rm -fr /workspace/bins/tensorflow*
+		echo "File tensorflow_model_server exists."
+
+		eval "$CUSTOM_BUILD_2" 2>&1 | tee -a /workspace/build.log ; test ${PIPESTATUS[0]} -eq 0
+		if (( $? )); then
+		    echo "####################################"
+			echo "      CUSTOM_BUILD_2  ERROR!!     	  "
+			echo "####################################"
+			$MY_EXIT_1
+		else
+			echo "####################################"
+			echo "      CUSTOM_BUILD_2  SUCCESS     	  "
+			echo "####################################"
+			if [ -e /workspace/bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package ]
+			then
+				echo "File build_pip_package exists."
+				PIP_RELEASE_FOLDER="/tmp/build_pip_package-$(date +%Y-%m-%d_%H%M%S)"
+				mkdir -p $PIP_RELEASE_FOLDER
+				bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package $PIP_RELEASE_FOLDER
+				cd $PIP_RELEASE_FOLDER
+				source /build_tools/change_metadata.sh "$PIP_RELEASE_FOLDER/tensorflow_serving_api*" 
+
 		cp $FINAL_FILE /workspace/bins
 		ls -l /workspace/bins
 		#release
@@ -248,6 +268,8 @@ else
 		cp /workspace/bins/build_info.* /tmp/release_dir/
 		cp /workspace/bins/* /tmp/release_dir/
 		ls -l /tmp/release_dir/
+
+
 		BINARY_FILE=$(basename `ls tensorflow*`)
 		[[ $BINARY_FILE =~ .*_serving_api* ]] && TF_FILE_NAME="tensorflow_serving_api" || TF_FILE_NAME="tf-serving"
 		OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)

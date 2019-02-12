@@ -135,6 +135,12 @@
             "required": false
         },
         {
+            "name": "CUSTOM_BUILD_2",
+            "description": "Set to custom BUILD 2 command",
+            "value": "bazel build -c opt --local_resources 2048,2.0,1.0  //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures",
+            "required": false
+        },
+        {
             "name": "BUILD_OPTS",
             "description": "Custom options to bazel BUILD command",
             "value": "",

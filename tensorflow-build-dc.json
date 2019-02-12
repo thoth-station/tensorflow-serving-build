@@ -489,13 +489,13 @@
         {
             "name": "BAZEL_VERSION",
             "description": "BAZEL_VERSION",
-            "value": "0.15.0",
+            "value": "0.20.0",
             "required": true
         },
         {
             "name": "TF_GIT_BRANCH",
             "description": "TF_GIT_BRANCH",
-            "value": "r1.10",
+            "value": "r1.12",
             "required": true
         },
         {
