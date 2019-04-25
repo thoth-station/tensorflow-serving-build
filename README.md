@@ -62,11 +62,10 @@ Following should be left blank for a build job.
 
 *set some environment values for convenience*
 ```
+# git token and repo
 # valid values are 2.7,3.6,3.5
 PYTHON_VERSION=3.6
-
-# git token and repo
-export GIT_TOKEN=
+GIT_TOKEN=
 export GIT_RELEASE_REPO=
 ```
 
@@ -81,16 +80,16 @@ oc create -f tensorflow-build-dc.json
 #### 2. Create Tensorflow-Serving build image
 ```
 oc new-app --template=tensorflow-serving-build-image  \
- --param=APPLICATION_NAME=tf-serving-fc28-build-image-${PYTHON_VERSION//.} \
- --param=S2I_IMAGE=registry.fedoraproject.org/f28/s2i-core   \
+ --param=APPLICATION_NAME=tf-serving-fc29-build-image-${PYTHON_VERSION//.} \
+ --param=S2I_IMAGE=registry.fedoraproject.org/f29/s2i-core   \
  --param=DOCKER_FILE_PATH=Dockerfile.fedora28 \
- --param=PYTHON_VERSION=$PYTHON_VERSION --param=BUILD_VERSION=1 --param=BAZEL_VERSION=0.18.0
+ --param=PYTHON_VERSION=$PYTHON_VERSION --param=BUILD_VERSION=1 --param=BAZEL_VERSION=0.21.0
 
- oc new-app --template=tensorflow-serving-build-image  \
+oc new-app --template=tensorflow-serving-build-image  \
  --param=APPLICATION_NAME=tf-serving-centos7-build-image-${PYTHON_VERSION//.} \
  --param=S2I_IMAGE=openshift/base-centos7   \
  --param=DOCKER_FILE_PATH=Dockerfile.centos7 \
- --param=PYTHON_VERSION=$PYTHON_VERSION --param=BUILD_VERSION=1 --param=BAZEL_VERSION=0.18.0
+ --param=PYTHON_VERSION=$PYTHON_VERSION --param=BUILD_VERSION=1 --param=BAZEL_VERSION=0.21.0
 ```
 The above command creates a tensorflow builder image `APPLICATION_NAME:VERSION` for specific OS.
 
@@ -106,10 +105,16 @@ The values for `DOCKER_FILE_PATH` are :
 #### 3. Create Tensorflow wheel for CPU using the build image
 ```
 oc new-app --template=tensorflow-serving-build-job  \
---param=APPLICATION_NAME=tf-serving-fc28-build-job-${PYTHON_VERSION//.} \
---param=BUILDER_IMAGESTREAM=tf-serving-fc28-build-image-${PYTHON_VERSION//.}:1  \
+--param=APPLICATION_NAME=tf-serving-fc29-build-job-${PYTHON_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-fc29-build-image-${PYTHON_VERSION//.}:1  \
 --param=PYTHON_VERSION=$PYTHON_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
---param=BAZEL_VERSION=0.18.0 --param=TF_GIT_BRANCH=r1.12
+--param=BAZEL_VERSION=0.21.0 --param=TF_GIT_BRANCH=r1.13 --param=CPU_LIMIT=36 --param=CPU_REQUESTS=36 --param=MEMORY_LIMIT=50Gi --param=MEMORY_REQUESTS=50Gi
+
+oc new-app --template=tensorflow-serving-build-job  \
+--param=APPLICATION_NAME=tf-serving-centos7-build-job-${PYTHON_VERSION//.} \
+--param=BUILDER_IMAGESTREAM=tf-serving-centos7-build-image-${PYTHON_VERSION//.}:1  \
+--param=PYTHON_VERSION=$PYTHON_VERSION     --param=GIT_TOKEN=$GIT_TOKEN \
+--param=BAZEL_VERSION=0.21.0 --param=TF_GIT_BRANCH=r1.13 --param=CPU_LIMIT=36 --param=CPU_REQUESTS=36 --param=MEMORY_LIMIT=50Gi --param=MEMORY_REQUESTS=50Gi 
 ```
 
 *OR*

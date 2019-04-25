@@ -4,7 +4,7 @@
 ### Build Tensorflow Serving Images
 ```
 docker build -f Dockerfile.centos7  -t submod/tf_serving_centos7_1.9 .
-docker build -f Dockerfile.centos7  -t submod/tf_serving_f28_1.10 .
+docker build -f Dockerfile.fedora28  -t submod/tf_serving_f28_1.10 .
 docker push submod/tf_serving_centos7_1.9
 docker push submod/tf_serving_f28_1.10 
 

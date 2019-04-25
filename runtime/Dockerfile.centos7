@@ -8,7 +8,7 @@ LABEL tensorflow_serving_github_branchtag=${TF_SERVING_VERSION_GIT_BRANCH}
 LABEL tensorflow_serving_github_commit=${TF_SERVING_VERSION_GIT_COMMIT}
 
 # provide different URL here for different versions
-ARG TF_URL=https://github.com/AICoE/tensorflow-wheels/releases/download/tf-serving-r1.9-cpu-2018-12-13_145924/tensorflow_model_server
+ARG TF_URL=https://github.com/AICoE/tensorflow-wheels/releases/download/tensorflow_serving_api-r1.13-cpu-2019-04-25_214004/tensorflow_model_server
 
 
 # Install TF Serving pkg

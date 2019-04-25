@@ -122,12 +122,12 @@
                                 "command": ["/entrypoint", "/usr/libexec/s2i/run"],
                                 "resources": {
                                     "limits": {
-                                        "cpu": "4",
-                                        "memory": "8Gi"
+                                        "cpu": "${CPU_LIMIT}",
+                                        "memory": "${MEMORY_LIMIT}"
                                     },
                                     "requests": {
-                                        "cpu": "4",
-                                        "memory": "8Gi"
+                                        "cpu": "${CPU_REQUESTS}",
+                                        "memory": "${MEMORY_REQUESTS}"
                                     }
                                 }
                             }
@@ -155,13 +155,13 @@
         {
             "name": "CUSTOM_BUILD",
             "description": "Set to custom BUILD command",
-            "value": "bazel build -c opt --local_resources 2048,2.0,1.0  //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures",
+            "value": "bazel build -c opt --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-mfpmath=both --copt=-msse4.2 //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures",
             "required": false
         },
         {
             "name": "CUSTOM_BUILD_2",
             "description": "Set to custom BUILD 2 command",
-            "value": "bazel build  -c opt --local_resources 2048,2.0,1.0 --verbose_failures tensorflow_serving/tools/pip_package:build_pip_package",
+            "value": "bazel build  -c opt --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-mfpmath=both --copt=-msse4.2 --verbose_failures tensorflow_serving/tools/pip_package:build_pip_package",
             "required": false
         },
         {
@@ -282,6 +282,30 @@
             "name": "GIT_RELEASE_REPO",
             "description": "GIT_RELEASE_REPO",
             "value": "https://github.com/AICoE/tensorflow-wheels.git",
+            "required": true
+        },
+        {
+            "name": "CPU_LIMIT",
+            "description": "CPU_LIMIT",
+            "value": "8",
+            "required": true
+        },
+        {
+            "name": "MEMORY_LIMIT",
+            "description": "MEMORY_LIMIT",
+            "value": "8Gi",
+            "required": true
+        },
+        {
+            "name": "CPU_REQUESTS",
+            "description": "CPU_REQUESTS",
+            "value": "8",
+            "required": true
+        },
+        {
+            "name": "MEMORY_REQUESTS",
+            "description": "MEMORY_REQUESTS",
+            "value": "8Gi",
             "required": true
         }
     ]
