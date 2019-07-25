@@ -87,7 +87,6 @@ if [[ $LOCAL_BUILD = "n" ]]; then
 fi
 echo "============================================"
 
-
 TEST_CMD="import tensorflow as tf ; a = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[2, 3], name='a') ; \
 	b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b') ; c = tf.matmul(a, b) ; \
 	sess = tf.Session(config=tf.ConfigProto(log_device_placement=True)) ;print(sess.run(c))"
@@ -109,7 +108,6 @@ echo "link_which_pip="`ls -l $(which pip) | awk '{print  $9 $10 $11}'`
 pip list 2>&1 | grep "YAML\|proto\|numpy\|keras"
 
 
-
 # Naming the directory according to the naming convention
 OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)
 for varname in ${!TF_NEED_*}; do
@@ -122,7 +120,6 @@ for varname in ${!TF_NEED_*}; do
     fi
 done
 TENSORFLOW_BUILD_DIR_NAME=$OSVER/${TF_GIT_BRANCH//r}/${FINAL_STR::-1}
-
 
 
 #Dev Mode
@@ -140,10 +137,8 @@ then
 fi
 
 
-
 sh $BUILD_TOOLS_DIR/python_script.sh
 echo "The Python conundrum.DONE."
-
 
 
 echo | gcc -E -Wp,-v -
@@ -183,8 +178,6 @@ git clone --branch=$TF_GIT_BRANCH --depth=1 https://github.com/tensorflow/servin
 # echo "      configure.....       	      "
 # echo "####################################"
 # ./configure
-
-
 
 
 ###########################
@@ -251,11 +244,25 @@ else
 				env_check PIP_RELEASE_FOLDER
 				mkdir -p $PIP_RELEASE_FOLDER
 				bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package $PIP_RELEASE_FOLDER
+        cd $PIP_RELEASE_FOLDER
+        pip install tensorflow_serving_api-*
+
+        if [[ $TEST_WHEEL_FILE = "y" ]]; then
+          echo "####################################"
+          echo "      Testing wheel file...         "
+          echo "####################################"
+python << END
+$TEST_CMD
+END
+          if [[ $? != 0 ]]; then
+              echo "ERROR:variable not set" && exit 1
+          fi
+        fi
+
 				#release
 				echo "####################################"
 				echo "      Releasing...			      "
 				echo "####################################"
-				cd $PIP_RELEASE_FOLDER
 				source $BUILD_TOOLS_DIR/change_metadata.sh "$PIP_RELEASE_FOLDER/tensorflow_serving_api*"  /workspace/bins/
 				cd $PIP_RELEASE_FOLDER
 				BINARY_FILE=$(basename `ls tensorflow*.whl`)
