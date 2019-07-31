@@ -75,7 +75,7 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && echo "PATH=$PATH" \
     && echo "PYTHON_VERSION=$PYTHON_VERSION" \
     && echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" \
-    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \ 
+    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \
     && echo "-----IMAGE_TEST--------" \
     && dnf install -y tar tree which git curl wget java-headless bzip2 gnupg2 sqlite protobuf-compiler kmod \
     && chgrp -R root /opt \
@@ -98,7 +98,7 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && echo "PATH=$PATH" \
     && echo "PYTHON_VERSION=$PYTHON_VERSION" \
     && echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" \
-    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \ 
+    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \
     && echo "-----IMAGE_TEST--------" \
     && if [ "$PYTHON_VERSION" = "2.7" ] ; then python$PYTHON_VERSION get-pip.py ; fi \
     && if [ "$PYTHON_VERSION" = "3.5" ] ; then  export LD_LIBRARY_PATH="/usr/lib64:/usr/local/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" && export PYTHON_LIB_PATH=/usr/lib64/python$PYTHON_VERSION/site-packages && rm -fr /usr/bin/python && ln -s /usr/bin/python3.5 /usr/bin/python && python get-pip.py && rm -fr /usr/bin/pip && ln -s /usr/bin/pip-3 /usr/bin/pip ; fi \
@@ -157,7 +157,7 @@ RUN  wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini
 RUN mkdir -p /tf \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -U setuptools \
-    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyaml keras \
+    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyaml keras future\
     && mkdir -p /tf/tools \
     && cd /tf/tools \
     && wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh \
@@ -201,4 +201,3 @@ ENTRYPOINT ["/entrypoint"]
 
 # TODO: Set the default CMD for the image
 CMD ["/usr/libexec/s2i/usage"]
-

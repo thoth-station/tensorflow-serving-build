@@ -165,7 +165,7 @@ RUN mkdir -p /tf \
     && echo $LD_LIBRARY_PATH \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -U setuptools \
-    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyaml keras \
+    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyaml keras future\
     && mkdir -p /tf/tools \
     && cd /tf/tools \
     && wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh \
@@ -198,7 +198,7 @@ ADD build_tools /build_tools
 EXPOSE 8080
 
 ENV HOME /home/$NB_USER
-# This default user is created in the openshift/base-centos7 image
+# This default user is created in the image
 USER 1001
 # Make the default PWD somewhere that the user can write. This is
 # useful when connecting with 'oc run' and starting a 'spark-shell',
