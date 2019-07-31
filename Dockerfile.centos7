@@ -1,4 +1,3 @@
-
 FROM openshift/base-centos7
 
 MAINTAINER Subin Modeel <smodeel@redhat.com>
@@ -27,7 +26,7 @@ ENV LC_ALL=""
 ENV PYTHONIOENCODING UTF-8
 ENV NB_USER=default
 ENV NB_UID=1001
-ENV PYTHON_BIN_PATH=/usr/bin/python 
+ENV PYTHON_BIN_PATH=/usr/bin/python
 ENV TINI_VERSION=v0.18.0
 
 ## Bazel
@@ -76,7 +75,7 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && echo "PATH=$PATH" \
     && echo "PYTHON_VERSION=$PYTHON_VERSION" \
     && echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" \
-    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \ 
+    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \
     && echo "-----IMAGE_TEST--------" \
     && yum install -y epel-release \
     && yum install -y tar tree git curl wget java-headless bzip2 gnupg2 sqlite3 protobuf-compiler \
@@ -100,7 +99,7 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && echo "PATH=$PATH" \
     && echo "PYTHON_VERSION=$PYTHON_VERSION" \
     && echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" \
-    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \ 
+    && echo "PYTHON_LIB_PATH=$PYTHON_LIB_PATH" \
     && echo "-----IMAGE_TEST--------" \
     && if [ "$PYTHON_VERSION" = "2.7" ] ; then python$PYTHON_VERSION get-pip.py ; fi \
     && if [ "$PYTHON_VERSION" = "3.5" ] ; then  export LD_LIBRARY_PATH="/opt/rh/rh-python35/root/usr/lib64/:/usr/local/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" && export PYTHON_LIB_PATH=/opt/rh/rh-python35/root/usr/lib/python3.5/site-packages && rm -fr /usr/bin/python && ln -s /opt/rh/rh-python35/root/usr/bin/python3.5 /usr/bin/python && python get-pip.py && rm -fr /usr/bin/pip && ln -s /opt/rh/rh-python35/root/usr/bin/pip /usr/bin/pip ; fi \
@@ -130,13 +129,13 @@ RUN  wget https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini
     && gpg --batch --verify /tmp/tini.asc /tmp/tini  \
     && mv /tmp/tini /usr/local/bin/tini  \
     && chmod +x /usr/local/bin/tini  \
-    && chown -R 1001:1001 /opt/app-root  \ 
+    && chown -R 1001:1001 /opt/app-root  \
     && chgrp -R root /opt/app-root  \
     && chmod -R ug+rwx /opt/app-root  \
     && echo "startup --batch" >>/etc/.bazelrc  \
     && echo "startup --batch" >>/root/.bazelrc  \
     && echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/etc/.bazelrc  \
-    && echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/root/.bazelrc 
+    && echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >>/root/.bazelrc
 
 
 #https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/ci_build/install/.bazelrc
@@ -161,7 +160,7 @@ RUN mkdir -p /tf \
 	&& echo $LD_LIBRARY_PATH \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -U setuptools \
-    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyaml keras \
+    && pip install --no-cache-dir enum34 futures mock numpy six pixiedust pillow pyaml keras future\
     && mkdir -p /tf/tools \
     && cd /tf/tools \
     && wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh \
@@ -205,4 +204,3 @@ ENTRYPOINT ["/entrypoint"]
 
 # TODO: Set the default CMD for the image
 CMD ["/usr/libexec/s2i/usage"]
-
