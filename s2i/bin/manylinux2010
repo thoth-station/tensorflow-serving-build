@@ -1,0 +1,311 @@
+#!/bin/bash -e
+#
+# S2I run script for the 's2i' image.
+# The run script executes the server that runs your application.
+#
+# For more information see the documentation:
+#	https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md
+#
+set -e
+set -o pipefail
+
+echo "run...."
+command_exists () { type "$1" &> /dev/null ; }
+file_exists () { test -f $1 ; }
+folder_exists () { test -d $1 ; }
+MY_EXIT_1() { echo "ERROR:variable not set" && exit 1; }
+MY_RETURN_1() {  return 1; }
+MY_RETURN_0() {  return 0; }
+env_check () {
+  exit_function=MY_RETURN_0;
+  # If exit function is passed as $2 use it.
+  if [[ ! -z "$2" ]];then exit_function=$2 ;fi
+  if [ $# -eq 0 ];then printf "No arguments supplied. \nUsage:\n env_check \"ENV_NAME\" [\"exit_function\"]\n" && $exit_function;fi
+  param=$1;
+  # The exclamation mark makes param to get the value of the variable with that name.
+  if [[ -z "${!param}" ]];then echo "$1 is undefined" && $exit_function; else echo "$1 = "${!param} ;fi
+}
+check_oauth_scope() {
+  # check to see if X-OAuth-Scopes has repo
+  curl --silent -i -H "Authorization: token $GIT_TOKEN" https://api.github.com/rate_limit |
+    grep "X-OAuth-Scopes:" | tr -d ":" | awk -v N=$2 '{print $2}'                                   # Pluck JSON value
+}
+
+### ENV vars for configure script.
+env_check TF_NEED_JEMALLOC
+env_check TF_NEED_GCP
+env_check TF_NEED_VERBS
+env_check TF_NEED_HDFS
+env_check TF_ENABLE_XLA
+env_check TF_NEED_OPENCL
+env_check TF_NEED_CUDA
+env_check TF_NEED_MPI
+env_check TF_NEED_GDR
+env_check TF_NEED_S3
+env_check TF_CUDA_VERSION
+env_check TF_CUDA_COMPUTE_CAPABILITIES
+env_check TF_CUDNN_VERSION
+env_check TF_NEED_OPENCL_SYCL
+env_check TF_CUDA_CLANG
+env_check GCC_HOST_COMPILER_PATH
+env_check CUDA_TOOLKIT_PATH
+env_check CUDNN_INSTALL_PATH
+
+### 1.9 tensorflow needs below new ENVs
+env_check TF_NEED_KAFKA
+env_check TF_NEED_OPENCL_SYCL
+env_check TF_DOWNLOAD_CLANG
+env_check TF_SET_ANDROID_WORKSPACE
+
+### 1.12 tensorflow needs below new ENVs
+env_check TF_NEED_IGNITE
+env_check TF_NEED_ROCM
+### These ENVs should be correctly set by Dockerfile.
+env_check PATH MY_EXIT_1
+env_check JAVA_HOME MY_EXIT_1
+env_check PYTHON_LIB_PATH MY_EXIT_1
+env_check LD_LIBRARY_PATH MY_EXIT_1
+env_check PYTHON_BIN_PATH MY_EXIT_1
+
+### These ENVs are used in build/publish logic
+env_check PORT
+env_check BUILD_OPTS
+env_check CUSTOM_BUILD MY_EXIT_1
+env_check CUSTOM_BUILD_2 MY_EXIT_1
+env_check TEST_LOOP MY_EXIT_1
+env_check TF_GIT_BRANCH MY_EXIT_1
+env_check PYTHON_VERSION MY_EXIT_1
+env_check HOST_ON_HTTP_SERVER MY_EXIT_1
+env_check TEST_WHEEL_FILE MY_EXIT_1
+env_check GIT_RELEASE_REPO MY_EXIT_1
+env_check HOME
+
+if [[ $LOCAL_BUILD = "n" ]]; then
+	OAUTH_SCOPE=$(check_oauth_scope)
+	echo "OAUTH_SCOPE uses GIT_TOKEN"
+	env_check OAUTH_SCOPE
+fi
+echo "============================================"
+
+
+TEST_CMD="import tensorflow as tf ; a = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[2, 3], name='a') ; \
+	b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b') ; c = tf.matmul(a, b) ; \
+	sess = tf.Session(config=tf.ConfigProto(log_device_placement=True)) ;print(sess.run(c))"
+
+BUILD_TOOLS_DIR="/build_tools"
+env_check BUILD_TOOLS_DIR
+
+
+source $BUILD_TOOLS_DIR/setup_devtoolset.sh
+source $BUILD_TOOLS_DIR/setup_python.sh
+source $BUILD_TOOLS_DIR/setup_pip.sh
+
+#pip list 2>&1 | grep "YAML\|proto\|numpy"
+#echo "PYTHON_LIB_PATH=`$PYTHON_BIN_PATH -c 'import site; print(site.getsitepackages()[0])'`"
+#echo "PYTHONPATH="$PYTHONPATH
+#PYTHON_LIB_PATH="$($PYTHON_BIN_PATH -c 'import sys;for pth in sys.path: print pth)')"
+echo "which_python="`which python`
+echo "link_which_python="`ls -l $(which python) | awk '{print  $9 $10 $11}'`
+echo "link_bin_python="`ls -l /usr/bin/python |awk '{print  $9 $10 $11}'`
+echo "which_pip="`which pip`
+echo "which_pip_version="`pip --version `
+echo "which_pip_site="`pip --version |awk '{print $4}' `
+echo "link_which_pip="`ls -l $(which pip) | awk '{print  $9 $10 $11}'`
+pip list 2>&1 | grep "YAML\|proto\|numpy\|keras"
+
+
+# Naming the directory according to the naming convention
+major=$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
+minor=$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f2)
+OSVER=$(cat /etc/redhat-release | cut -d' ' -f1 |  awk '{print tolower($0)}')
+OS_VERSION="$OSVER$major"
+echo "OS_VERSION = "$OS_VERSION
+FINAL_STR=""
+FINAL_STR_COUNT=0
+for varname in ${!TF_NEED_*}; do
+    if [ "${!varname}" = "1" ]; then
+        WORD=$(echo "${varname//TF_NEED_}" | tr '[:upper:]' '[:lower:]')
+        if [ "$FINAL_STR_COUNT" = "0" ]; then
+        	FINAL_STR+=$WORD
+        else
+        	FINAL_STR+="+"$WORD
+        fi
+        if [ "$varname" = "TF_NEED_CUDA" ]; then
+                WORD+=$TF_CUDA_VERSION
+        fi
+        #counter
+        FINAL_STR_COUNT=$((FINAL_STR_COUNT + 1))
+    fi
+done
+echo "FINAL_STR = "$FINAL_STR
+TENSORFLOW_BUILD_DIR_NAME=$OS_VERSION/${TF_GIT_BRANCH//r}/${FINAL_STR}
+
+
+#Dev Mode
+if [[ $TEST_LOOP = "y" ]]
+then
+	echo "####################################"
+	echo "      DEV/TEST MODE.....       	  "
+	echo "####################################"
+    echo "Starting a infinite while loop to debug in console terminal\n"
+    while :
+	do
+		echo "Press [CTRL+C] to stop.."
+		sleep 1
+	done
+fi
+
+
+sh $BUILD_TOOLS_DIR/python_script.sh
+echo "The Python conundrum.DONE."
+
+
+echo | gcc -E -Wp,-v -
+echo "which_pip_version="`pip --version `
+pip list 2>&1 | grep "YAML\|proto\|numpy\|keras"
+OSVER=$(. /etc/os-release;echo $ID)
+export PATH=$HOME/bin:$PATH
+export JAVA_HOME=$(readlink -f $JAVA_HOME)
+env_check OSVER
+env_check PATH
+env_check JAVA_HOME
+ls -l $JAVA_HOME
+
+
+### Setup Bazel
+cd /workspace
+if command_exists bazel ; then
+	echo "bazel command exists.";
+else
+  echo "bazel command doesnt exists"
+  source $BUILD_TOOLS_DIR/build_bazel.sh
+fi
+
+### git clone tf and test
+cd /workspace
+echo "####################################"
+echo "      clone git repo.....       	  "
+echo "####################################"
+# git clone --branch=r1.12 --depth=1 https://github.com/tensorflow/serving .
+git clone --branch=$TF_GIT_BRANCH --depth=1 https://github.com/tensorflow/serving .
+# echo "####################################"
+# echo "      test.....       	      "
+# echo "####################################"
+# bazel test -c opt -- //tensorflow/...
+# echo "####################################"
+# echo "      configure.....       	      "
+# echo "####################################"
+# ./configure
+
+###########################
+### TODO NO GPU support yet
+###########################
+env_check TF_NEED_CUDA
+if [ $TF_NEED_CUDA = "1" ]; then
+	echo "####################################"
+	echo "      CUDA BUILD TODO.....       	  "
+	echo "####################################"
+fi
+
+# /workspace/bins is final location of binaries
+echo "####################################"
+echo "      CUSTOM_BUILD.....       	  "
+echo "####################################"
+cd /workspace
+mkdir -p /workspace/bins
+rm -fr /workspace/bins/tensorflow*
+
+source $BUILD_TOOLS_DIR/print_build_info.sh || $MY_EXIT_1
+mv build_info.* /workspace/bins/
+
+
+# bazel build -c opt --local_resources 2048,2.0,1.0  //tensorflow_serving/model_servers:tensorflow_model_server --verbose_failures
+# bazel build -c opt --local_resources 2048,2.0,1.0  tensorflow_serving/tools/pip_package:build_pip_package --verbose_failures
+# && bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package /tmp
+env_check CUSTOM_BUILD
+eval "$CUSTOM_BUILD" 2>&1 | tee -a /workspace/build.log ; test ${PIPESTATUS[0]} -eq 0
+if (( $? )); then
+	echo "####################################"
+	echo "      CUSTOM_BUILD  ERROR!!     	  "
+	echo "####################################"
+	$MY_EXIT_1
+else
+	echo "####################################"
+	echo "      CUSTOM_BUILD  SUCCESS     	  "
+	echo "####################################"
+	# 1) FINAL_FILE = /workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server
+	# 2) CUSTOM_BUILD=/workspace/tensorflow_serving/tools/pip_package:build_pip_package && bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package /tmp \
+	# && FINAL_FILE=$(basename `ls /tmp/tensorflow_serving_api*`)
+  echo "Applying manylinux patch"
+  patch -p1 < $BUILD_TOOLS_DIR/manylinux2010_serving.patch
+	if [ -e /workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ]
+	then
+		## bazel build is success
+		## cleanup old
+		echo "File tensorflow_model_server exists."
+		cd /workspace
+		env_check CUSTOM_BUILD_2
+		eval "$CUSTOM_BUILD_2" 2>&1 | tee -a /workspace/build.log ; test ${PIPESTATUS[0]} -eq 0
+		if (( $? )); then
+		  echo "####################################"
+			echo "      CUSTOM_BUILD_2  ERROR!!     	  "
+			echo "####################################"
+			$MY_EXIT_1
+		else
+			echo "####################################"
+			echo "      CUSTOM_BUILD_2  SUCCESS     	  "
+			echo "####################################"
+			if [ -e /workspace/bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package ]
+			then
+				echo "File build_pip_package exists."
+				PIP_RELEASE_FOLDER="/tmp/build_pip_package-$(date +%Y-%m-%d_%H%M%S)"
+				env_check PIP_RELEASE_FOLDER
+				mkdir -p $PIP_RELEASE_FOLDER
+				bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package $PIP_RELEASE_FOLDER
+				#release
+				echo "####################################"
+				echo "      Releasing...			      "
+				echo "####################################"
+				cd $PIP_RELEASE_FOLDER
+				source $BUILD_TOOLS_DIR/change_metadata.sh "$PIP_RELEASE_FOLDER/tensorflow_serving_api*"  /workspace/bins/
+				cd $PIP_RELEASE_FOLDER
+				BINARY_FILE=$(basename `ls tensorflow*.whl`)
+				env_check BINARY_FILE
+				[[ $BINARY_FILE =~ .*_serving_api* ]] && TF_FILE_NAME="tensorflow_serving_api" || TF_FILE_NAME="tf-serving"
+				OSVER=$(. /etc/os-release;echo $ID$VERSION_ID)
+				RELEASE_NAME=$OSVER/$PYTHON_VERSION/$TF_GIT_BRANCH
+				if [ $TF_NEED_CUDA = "1" ]; then
+					GIT_TAG="$TF_FILE_NAME-${TF_GIT_BRANCH}-gpu-$(date +%Y-%m-%d_%H%M%S)"
+				else
+					GIT_TAG="$TF_FILE_NAME-${TF_GIT_BRANCH}-cpu-$(date +%Y-%m-%d_%H%M%S)"
+				fi
+				RELEASE_NOTES=$(python $BUILD_TOOLS_DIR/utils.py /workspace/bins/build_info.json)
+				GIT_TOKEN="${GIT_TOKEN}"
+				RELEASE_FILES="$PIP_RELEASE_FOLDER/${BINARY_FILE} /workspace/bins/build_info.yaml /workspace/bins/build_info.json"
+				env_check RELEASE_FILES
+			fi
+		fi
+		#release the tensorflow_model_server
+		RELEASE_FILES="/workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server${RELEASE_FILES:+ ${RELEASE_FILES}}"
+		env_check RELEASE_FILES
+		git clone $GIT_RELEASE_REPO upload-dir
+		ls -l
+		cd upload-dir
+		source $BUILD_TOOLS_DIR/release.sh "${GIT_TAG}" "${TENSORFLOW_BUILD_DIR_NAME}" "${RELEASE_NOTES}" "${GIT_TOKEN}" "${RELEASE_FILES}"
+	fi #end
+fi # end build
+if ls -l  /workspace/build.log; then
+	mv /workspace/build.log /workspace/bins/ ;
+fi
+
+
+### enable HOST_ON_HTTP_SERVER only with deploymentConfig(i.e build-dc.json) and NOT with Jobs.
+if [[ $HOST_ON_HTTP_SERVER = "y" ]]
+then
+	echo "Starting httpserver to host the binary...\n"
+    cd /workspace/
+	if [[ $PYTHON_VERSION = "2.7" ]] ; then
+		python -m SimpleHTTPServer $PORT ;
+	else python -m http.server $PORT ;
+	fi
+fi
