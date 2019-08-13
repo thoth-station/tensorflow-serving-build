@@ -1,0 +1,23 @@
+%_topdir /tmp/rpm
+%_tmppath %{_topdir}
+%_dbpath %{_topdir}/rpmdb
+%_builddir ./
+%_rpmdir ./bld/rpm
+%_sourcedir %{_topdir}
+%_specdir %{_topdir}
+%_srcrpmdir %{_topdir}
+%_buildrootdir %{_topdir}/rpmbuild
+%buildroot %{_buildrootdir}/%{name}-%{version}-%{release}
+
+#binary packages path
+%_bindir /usr/local/bin
+
+#binary paths that will be the installation path for the file.
+%_bin %{buildroot}%{_bindir}
+
+#macros to delete and create paths.
+%rm_br rm -rf %{buildroot}
+%mk_path mkdir -p %{_bin}
+
+#file perm, owner, group, dir perm
+%_bin_perm %defattr(0755,root,root,0644)

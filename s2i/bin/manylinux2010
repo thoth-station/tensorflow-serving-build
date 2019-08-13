@@ -287,7 +287,10 @@ else
 		fi
 		#release the tensorflow_model_server
 		RELEASE_FILES="/workspace/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server${RELEASE_FILES:+ ${RELEASE_FILES}}"
-		env_check RELEASE_FILES
+    source $BUILD_TOOLS_DIR/build_rpm.sh
+    RELEASE_FILES="/workspace/bins/tensorflow-model-*${RELEASE_FILES:+ ${RELEASE_FILES}}"
+    env_check RELEASE_FILES
+    cd $PIP_RELEASE_FOLDER
 		git clone $GIT_RELEASE_REPO upload-dir
 		ls -l
 		cd upload-dir

@@ -75,6 +75,8 @@ ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-1.8.0*
 ## TODO : (check again)sourcestrategy can't be used for bazel because git clone doesnt work here
 
 RUN yum install -y centos-release-scl \
+    && yum groupinstall -y 'Development Tools' \
+    && yum install -y rpmdevtools yum-utils \
     && yum install -y vim gcc gcc-c++ clang glibc-devel make openssl-devel automake autoconf gpg devtoolset-$DEV_TOOLSET_VERSION \
     && yum install -y rh-python36 rh-python35 python27 \
     && yum install -y which findutils x86info cpuid dmidecode procps perf \
